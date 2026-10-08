@@ -1,0 +1,136 @@
+body {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    font-family: monospace;
+    transition: background-color 0.3s ease;
+    background-color: black;
+    padding-right: 320px;
+}
+
+#color-code {
+    font-size: 120px;
+    margin-bottom: 20px;
+}
+
+#saludo {
+    font-size: 60px;
+    margin: 20px;
+    min-height: 70px;
+}
+
+button, input {
+    font-size: 30px;
+    padding: 10px 20px;
+    margin: 10px;
+    border-radius: 8px;
+    border: none;
+}
+
+button {
+    background-color: rgba(255,255,255,0.2);
+    color: white;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: rgba(255,255,255,0.4);
+}
+
+input {
+    background-color: rgba(255,255,255,0.3);
+    color: white;
+}
+
+input::placeholder {
+    color: rgba(255,255,255,0.7);
+}
+
+#historial-panel {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 320px;
+    height: 100vh;
+    box-sizing: border-box;
+    background: rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-left: 1px solid rgba(255, 255, 255, 0.15);
+    padding: 20px;
+    overflow-y: auto;
+    z-index: 10;
+}
+
+#historial-panel header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+#historial-panel h2 {
+    font-size: 20px;
+    margin: 0;
+    color: white;
+}
+
+#refresh-historial {
+    font-size: 18px;
+    padding: 6px 12px;
+    margin: 0;
+}
+
+#historial-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+#historial-list li {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    padding: 10px 12px;
+}
+
+.historial-swatch {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    flex-shrink: 0;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.historial-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.historial-nombre {
+    font-size: 16px;
+    font-weight: bold;
+    color: white;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.historial-fecha {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.historial-hex {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.85);
+    font-family: monospace;
+}

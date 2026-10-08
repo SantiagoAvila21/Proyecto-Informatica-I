@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Persistencia con DynamoDB · ColorApp</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+<style>
+  :root {
+    --sidebar-bg: #0f172a;
+    --sidebar-fg: #cbd5e1;
+    --sidebar-fg-active: #ffffff;
+    --accent: #38bdf8;
+    --accent-soft: rgba(56, 189, 248, 0.12);
+    --text: #1f2937;
+    --text-muted: #6b7280;
+    --border: #e5e7eb;
+    --code-bg: #f6f8fa;
+    --heading: #0f172a;
+  }
+
+  * { box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    margin: 0;
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--text);
+    line-height: 1.7;
+    background: #ffffff;
+  }
+
+  /* ---------- Sidebar ---------- */
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 290px;
+    height: 100vh;
+    background: var(--sidebar-bg);
+    color: var(--sidebar-fg);
+    padding: 2rem 1.25rem;
+    overflow-y: auto;
+    z-index: 20;
+  }
+
+  .sidebar .brand {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 1.75rem;
+    color: #fff;
+    font-weight: 700;
+    font-size: 1.05rem;
+    text-decoration: none;
+  }
+
+  .sidebar .brand .dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: linear-gradient(135deg, #f43f5e, #f97316, #eab308, #22c55e, #38bdf8, #a855f7);
+  }
+
+  .sidebar .tagline {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #64748b;
+    margin: 0 0 0.35rem;
+  }
+
+  .sidebar nav a {
+    display: block;
+    color: var(--sidebar-fg);
+    text-decoration: none;
+    padding: 0.45rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.88rem;
+    margin-bottom: 2px;
+    border-left: 2px solid transparent;
+    transition: background 0.15s, color 0.15s;
+  }
+
+  .sidebar nav a:hover { color: #fff; background: rgba(255,255,255,0.05); }
+
+  .sidebar nav a.active {
+    color: var(--sidebar-fg-active);
+    background: var(--accent-soft);
+    border-left-color: var(--accent);
+    font-weight: 600;
+  }
+
+  /* ---------- Main ---------- */
+  .main {
+    margin-left: 290px;
+    max-width: 880px;
+    padding: 3rem 3rem 6rem;
+  }
+
+  header.hero {
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 1.5rem;
+    margin-bottom: 2.5rem;
+  }
+
+  header.hero .kicker {
+    display: inline-block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #0284c7;
+    background: #e0f2fe;
+    padding: 0.25rem 0.6rem;
+    border-radius: 999px;
+    margin-bottom: 0.75rem;
+  }
+
+  header.hero h1 {
+    margin: 0;
+    font-size: 2.25rem;
+    font-weight: 800;
+    color: var(--heading);
+    letter-spacing: -0.02em;
+  }
+
+  header.hero p {
+    margin: 0.6rem 0 0;
+    color: var(--text-muted);
+    font-size: 1.05rem;
+  }
+
+  section { margin-bottom: 3.25rem; scroll-margin-top: 1.5rem; }
+
+  h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--heading);
+    letter-spacing: -0.01em;
+    margin: 0 0 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  h2 .num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.7rem;
+    height: 1.7rem;
+    border-radius: 7px;
+    background: var(--accent);
+    color: #0f172a;
+    font-size: 0.85rem;
+    font-weight: 800;
+    margin-right: 0.55rem;
+    vertical-align: 2px;
+  }
+
+  p { margin: 0.75rem 0; }
+
+  code {
+    font-family: "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
+    font-size: 0.86em;
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 0.15em 0.4em;
+    color: #c026d3;
+  }
+
+  pre {
+    background: #1e293b;
+    border-radius: 10px;
+    padding: 1.1rem 1.25rem;
+    overflow-x: auto;
+    margin: 1.1rem 0;
+    font-size: 0.86rem;
+    line-height: 1.6;
+  }
+  pre code {
+    background: transparent;
+    border: none;
+    padding: 0;
+    color: inherit;
+    font-size: inherit;
+    text-shadow: none;
+  }
+
+  .file-label {
+    display: inline-block;
+    font-family: "SFMono-Regular", Menlo, Consolas, monospace;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #e2e8f0;
+    background: #334155;
+    padding: 0.3rem 0.7rem;
+    border-radius: 8px 8px 0 0;
+    margin-bottom: -1.1rem;
+    position: relative;
+    z-index: 1;
+  }
+
+  .file-label + pre { border-radius: 0 10px 10px 10px; }
+
+  figure {
+    margin: 1.5rem 0;
+    text-align: center;
+  }
+  figure img {
+    max-width: 100%;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: 0 6px 24px rgba(15, 23, 42, 0.08);
+  }
+  figcaption {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    margin-top: 0.6rem;
+  }
+
+  .callout {
+    border-left: 4px solid #f59e0b;
+    background: #fffbeb;
+    padding: 0.9rem 1.1rem;
+    border-radius: 0 8px 8px 0;
+    margin: 1.25rem 0;
+    font-size: 0.92rem;
+  }
+  .callout.tip { border-color: #38bdf8; background: #f0f9ff; }
+  .callout.warn { border-color: #f59e0b; background: #fffbeb; }
+  .callout strong { font-weight: 700; }
+
+  /* ---------- Mobile ---------- */
+  .menu-toggle {
+    display: none;
+    position: fixed;
+    top: 1rem; left: 1rem;
+    z-index: 30;
+    background: var(--sidebar-bg);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 0.6rem 0.75rem;
+    font-size: 1.1rem;
+    cursor: pointer;
+  }
+
+  @media (max-width: 860px) {
+    .sidebar { transform: translateX(-100%); transition: transform 0.2s; width: 260px; }
+    .sidebar.open { transform: translateX(0); }
+    .main { margin-left: 0; padding: 3rem 1.25rem 5rem; }
+    .menu-toggle { display: block; }
+    .main { padding-top: 4.5rem; }
+  }
+</style>
+</head>
+<body>
+
+<button class="menu-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')">☰</button>
+
+<aside class="sidebar">
+  <a class="brand" href="#top"><span class="dot"></span> ColorApp · Docs</a>
+  <p class="tagline">Proyecto I — Informática</p>
+  <nav id="toc">
+    <a href="#introduccion">Introducción</a>
+    <a href="#tabla-dynamodb">1 · Tabla en DynamoDB</a>
+    <a href="#usuario-iam">2 · Usuario IAM y credenciales</a>
+    <a href="#codigo-java">3 · Código Java</a>
+    <a href="#despliegue-proxmox">4 · Despliegue en Proxmox</a>
+    <a href="#pruebas">5 · Pruebas</a>
+    <a href="#interfaz">6 · Interfaz</a>
+  </nav>
+</aside>
+
+<main class="main" id="top">
+
+  <header class="hero">
+    <span class="kicker">AWS · DynamoDB · Spring Boot</span>
+    <h1>Persistencia con DynamoDB</h1>
+    <p>Cómo añadimos persistencia al proyecto <strong>ColorApp</strong> conectándolo a una tabla DynamoDB en AWS y desplegándolo en un servidor Proxmox.</p>
+  </header>
+
+  <section id="introduccion">
+    <h2>Introducción</h2>
+    <p>Partimos de nuestro proyecto <strong>ColorApi</strong> desplegado en nuestro servidor de Proxmox.</p>
+    <figure>
+      <img src="image.png" alt="Proyecto ColorApi desplegado">
+      <figcaption>Proyecto ColorApi desplegado en Proxmox</figcaption>
+    </figure>
+    <figure>
+      <img src="201889d2-8ecb-43cb-bed9-11df53d6a2f0.png" alt="Servidor Proxmox">
+      <figcaption>Servidor de Proxmox de la UD</figcaption>
+    </figure>
+  </section>
+
+  <section id="tabla-dynamodb">
+    <h2><span class="num">1</span>Tabla en DynamoDB</h2>
+    <p>Entramos a nuestra consola de AWS, al apartado <em>Create Table</em> del servicio <strong>DynamoDB</strong>. Creamos nuestra tabla llamada <code>colorapp-saludos</code> con una <em>partition key</em> <code>id</code> de tipo <strong>string</strong>, ya que usaremos UUID para identificar cada uno de los registros.</p>
+    <figure>
+      <img src="bda0b337-5225-4065-8797-3ad6c22f284d.png" alt="Crear tabla en DynamoDB">
+      <figcaption>Creación de la tabla <code>colorapp-saludos</code></figcaption>
+    </figure>
+    <p>Creamos nuestra tabla y esperamos a que esté activa.</p>
+    <figure>
+      <img src="image 1.png" alt="Tabla activa">
+      <figcaption>Tabla creada y activa</figcaption>
+    </figure>
+  </section>
+
+  <section id="usuario-iam">
+    <h2><span class="num">2</span>Usuario IAM y credenciales</h2>
+    <p>Iremos a <strong>IAM</strong> para crear nuestro usuario, el cual nos dará las <em>keys</em> para poder conectarnos a la base de datos. Al usuario lo llamaremos <code>colorApp</code>.</p>
+    <p>Le asignamos una política de acceso mínimo limitada a nuestra tabla:</p>
+    <span class="file-label">policy.json</span>
+    <pre><code class="language-json">{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Effect": "Allow",
+    "Action": [
+      "dynamodb:PutItem", "dynamodb:GetItem",
+      "dynamodb:Query", "dynamodb:Scan",
+      "dynamodb:UpdateItem", "dynamodb:DeleteItem"
+    ],
+    "Resource": "arn:aws:dynamodb:&lt;REGION&gt;:&lt;ACCOUNT_ID&gt;:table/colorapp-saludos"
+  }]
+}</code></pre>
+    <p>Creamos esa política con el nombre <code>colorAppTable</code> y se la asignamos a nuestro nuevo usuario.</p>
+    <figure>
+      <img src="image 3.png" alt="Asignar política IAM">
+      <figcaption>Política <code>colorAppTable</code> asignada al usuario</figcaption>
+    </figure>
+    <p>A este usuario le creamos unas <strong>access keys</strong> específicas para una app corriendo fuera de AWS, en este caso el Proxmox de la UD.</p>
+    <figure>
+      <img src="image 4.png" alt="Crear access keys">
+      <figcaption>Generación de access keys</figcaption>
+    </figure>
+    <p>Guardamos estas keys para luego usarlas en nuestras variables de entorno en el servidor.</p>
+  </section>
+
+  <section id="codigo-java">
+    <h2><span class="num">3</span>Código Java</h2>
+
+    <p>Añadimos el SDK de AWS para Java (v2) junto con el cliente mejorado de DynamoDB (<code>dynamodb-enhanced</code>). El <strong>BOM</strong> centraliza las versiones de todos los módulos del SDK para garantizar compatibilidad entre ellos. Tras modificar el fichero, recargamos las dependencias de Maven:</p>
+    <span class="file-label">pom.xml</span>
+    <pre><code class="language-markup">&lt;dependencyManagement&gt;
+  &lt;dependencies&gt;
+    &lt;dependency&gt;
+      &lt;groupId&gt;software.amazon.awssdk&lt;/groupId&gt;
+      &lt;artifactId&gt;bom&lt;/artifactId&gt;
+      &lt;version&gt;2.31.0&lt;/version&gt;
+      &lt;type&gt;pom&lt;/type&gt;
+      &lt;scope&gt;import&lt;/scope&gt;
+    &lt;/dependency&gt;
+  &lt;/dependencies&gt;
+&lt;/dependencyManagement&gt;
+
+&lt;!-- en &lt;dependencies&gt; --&gt;
+&lt;dependency&gt;
+  &lt;groupId&gt;software.amazon.awssdk&lt;/groupId&gt;
+  &lt;artifactId&gt;dynamodb&lt;/artifactId&gt;
+&lt;/dependency&gt;
+&lt;dependency&gt;
+  &lt;groupId&gt;software.amazon.awssdk&lt;/groupId&gt;
+  &lt;artifactId&gt;dynamodb-enhanced&lt;/artifactId&gt;
+&lt;/dependency&gt;</code></pre>
+
+    <p>Definimos la entidad <code>Saludo</code>, que representa cada registro de la tabla. La anotación <code>@DynamoDbBean</code> habilita el mapeo objeto-documento, y <code>@DynamoDbPartitionKey</code> marca el campo <code>id</code> como <strong>clave de partición</strong>. El campo <code>fecha</code> es de tipo <code>LocalDateTime</code>, que el SDK serializa automáticamente como cadena ISO-8601:</p>
+    <span class="file-label">Saludo.java</span>
+    <pre><code class="language-java">package com.example.colorapi;
+
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbBean;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey;
+
+import java.time.LocalDateTime;
+
+@DynamoDbBean
+public class Saludo {
+    private String id;
+    private String nombre;
+    private String color;
+    private LocalDateTime fecha;
+
+    @DynamoDbPartitionKey
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public String getNombre() {
+        return nombre;
+    }
+
+    public void setNombre(String nombre) {
+        this.nombre = nombre;
+    }
+
+    public LocalDateTime getFecha() {
+        return fecha;
+    }
+
+    public void setFecha(LocalDateTime fecha) {
+        this.fecha = fecha;
+    }
+
+    public String getColor() {
+        return color;
+    }
+
+    public void setColor(String color) {
+        this.color = color;
+    }
+}</code></pre>
+
+    <p>Creamos la configuración de Spring encargada de construir los clientes de DynamoDB. La región y el nombre de la tabla se inyectan desde <code>application.properties</code> mediante <code>@Value</code>, evitando valores hardcodeados. Se exponen tres beans: el <em>cliente base</em>, el <em>cliente mejorado</em> (que habilita el mapeo objeto-documento) y la <em>referencia tipada</em> a la tabla de <code>Saludo</code>:</p>
+    <span class="file-label">DynamoDbConfig.java</span>
+    <pre><code class="language-java">package com.example.colorapi;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
+import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
+import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
+
+@Configuration
+public class DynamoDbConfig {
+
+    @Value("${aws.region}")
+    private String region;
+
+    @Value("${aws.dynamodb.table}")
+    private String tableName;
+
+    @Bean
+    public DynamoDbClient dynamoDbClient() {
+        return DynamoDbClient.builder()
+                .region(Region.of(region))
+                .build();
+    }
+
+    @Bean
+    public DynamoDbEnhancedClient dynamoDbEnhancedClient(
+            DynamoDbClient dynamoDbClient) {
+        return DynamoDbEnhancedClient.builder()
+                .dynamoDbClient(dynamoDbClient)
+                .build();
+    }
+
+    @Bean
+    public DynamoDbTable&lt;Saludo&gt; saludoTable(
+            DynamoDbEnhancedClient enhancedClient) {
+        return enhancedClient.table(
+                tableName,
+                TableSchema.fromBean(Saludo.class)
+        );
+    }
+}</code></pre>
+
+    <p>Implementamos el repositorio que abstrae las operaciones sobre la tabla. <code>save</code> persiste un registro mediante <code>putItem</code>, mientras que <code>findAll</code> recorre todos los elementos con <code>scan</code>. Gracias a la inyección de dependencias, el repositorio recibe la tabla tipada sin acoplarse al cliente subyacente:</p>
+    <span class="file-label">SaludoRepository.java</span>
+    <pre><code class="language-java">package com.example.colorapi;
+
+import org.springframework.stereotype.Repository;
+import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
+
+import java.util.ArrayList;
+import java.util.List;
+
+@Repository
+public class SaludoRepository {
+
+    private final DynamoDbTable&lt;Saludo&gt; table;
+
+    public SaludoRepository(DynamoDbTable&lt;Saludo&gt; table) {
+        this.table = table;
+    }
+
+    public void save(Saludo saludo) {
+        table.putItem(saludo);
+    }
+
+    public List&lt;Saludo&gt; findAll() {
+        List&lt;Saludo&gt; saludos = new ArrayList&lt;&gt;();
+
+        table.scan()
+                .items()
+                .forEach(saludos::add);
+
+        return saludos;
+    }
+}</code></pre>
+
+    <p>Modificamos el controlador para integrar la persistencia en el flujo. En <code>POST /saludar</code> se valida el nombre, se genera un <code>UUID</code> como identificador, se construye el objeto <code>Saludo</code> y se persiste antes de devolver la respuesta. Además se añade <code>GET /historial</code>, que devuelve todos los saludos persistidos ordenados del más reciente al más antiguo:</p>
+    <span class="file-label">ColorController.java</span>
+    <pre><code class="language-java">package com.example.colorapi;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDateTime;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.UUID;
+
+@Controller
+public class ColorController {
+
+    private final Random random = new Random();
+    private final SaludoRepository saludoRepository;
+
+    public ColorController(SaludoRepository saludoRepository) {
+        this.saludoRepository = saludoRepository;
+    }
+
+    private String generarColor() {
+        return String.format("#%06x", random.nextInt(0xFFFFFF + 1));
+    }
+
+    @GetMapping("/")
+    public String home(Model model) {
+        model.addAttribute("color", generarColor());
+        return "color";
+    }
+
+    @GetMapping("/color")
+    @ResponseBody
+    public Map&lt;String, String&gt; getColor() {
+        Map&lt;String, String&gt; response = new HashMap&lt;&gt;();
+        response.put("color", generarColor());
+        return response;
+    }
+
+    @PostMapping("/saludar")
+    @ResponseBody
+    public ResponseEntity&lt;Map&lt;String, String&gt;&gt; saludar(@RequestBody NombreRequest request) {
+        String nombre = request.getNombre();
+
+        if (nombre == null || nombre.trim().isEmpty()) {
+            Map&lt;String, String&gt; error = new HashMap&lt;&gt;();
+            error.put("detail", "El nombre no puede estar vacío");
+            return ResponseEntity.badRequest().body(error);
+        }
+
+        String color = generarColor();
+
+        Saludo saludo = new Saludo();
+        saludo.setId(UUID.randomUUID().toString());
+        saludo.setNombre(nombre.trim());
+        saludo.setColor(color);
+        saludo.setFecha(LocalDateTime.now());
+        saludoRepository.save(saludo);
+
+        Map&lt;String, String&gt; response = new HashMap&lt;&gt;();
+        response.put("saludo", "¡Hola " + nombre.trim() + "!");
+        response.put("color", color);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/historial")
+    @ResponseBody
+    public List&lt;Saludo&gt; historial() {
+        List&lt;Saludo&gt; saludos = saludoRepository.findAll();
+        saludos.sort(Comparator.comparing(
+                Saludo::getFecha,
+                Comparator.nullsLast(Comparator.reverseOrder())));
+        return saludos;
+    }
+}</code></pre>
+
+    <p>Por último, configuramos en <code>application.properties</code> la región de AWS y el nombre de la tabla. Las credenciales no se definen aquí a propósito: el SDK las resuelve automáticamente desde las variables de entorno del servidor:</p>
+    <span class="file-label">application.properties</span>
+    <pre><code class="language-properties">spring.application.name=ColorApiJava
+server.port=8443
+server.ssl.key-store=classpath:keystore.p12
+server.ssl.key-store-password=estudiantes
+server.ssl.key-store-type=PKCS12
+server.ssl.key-alias=tomcat
+
+aws.region=us-east-1
+aws.dynamodb.table=colorapp-saludos</code></pre>
+  </section>
+
+  <section id="despliegue-proxmox">
+    <h2><span class="num">4</span>Despliegue en Proxmox</h2>
+
+    <p>Compilamos el proyecto con <code>./mvnw clean package</code> y copiamos el <code>.jar</code> generado al servidor, en <code>/opt/colorapi</code>.</p>
+
+    <p>Creamos el servicio de systemd:</p>
+    <span class="file-label">/etc/systemd/system/colorapp.service</span>
+    <pre><code class="language-ini">[Unit]
+Description=ColorApp
+After=network.target
+
+[Service]
+User=root
+EnvironmentFile=/etc/colorapp.env
+ExecStart=/usr/bin/java -jar /opt/colorapi/ColorApi-0.0.1-SNAPSHOT.jar
+Restart=always
+
+[Install]
+WantedBy=multi-user.target</code></pre>
+
+    <figure>
+      <img src="colorapp-service.png" alt="Archivo de servicio systemd">
+      <figcaption>Archivo <code>colorapp.service</code></figcaption>
+    </figure>
+
+    <p>Creamos el archivo de variables de entorno con las access keys que guardamos antes:</p>
+    <span class="file-label">/etc/colorapp.env</span>
+    <pre><code class="language-ini">AWS_ACCESS_KEY_ID=AKIA....
+AWS_SECRET_ACCESS_KEY=....</code></pre>
+
+    <figure>
+      <img src="colorapp-env.png" alt="Archivo de variables de entorno">
+      <figcaption>Variables de entorno (keys redactadas)</figcaption>
+    </figure>
+
+    <div class="callout tip"><strong>Tip:</strong> el SDK de AWS toma automáticamente estas variables de entorno para autenticarse, por eso no hay que configurar credenciales dentro del código.</div>
+
+    <p>Arrancamos y habilitamos el servicio:</p>
+    <pre><code class="language-bash">sudo systemctl daemon-reload
+sudo systemctl enable --now colorapp
+systemctl status colorapp</code></pre>
+
+    <figure>
+      <img src="systemd-running.png" alt="Estado del servicio">
+      <figcaption>El servicio queda activo (<em>active running</em>)</figcaption>
+    </figure>
+
+    <p>El servicio queda activo y la aplicación levanta en el puerto <code>8443</code>.</p>
+  </section>
+
+  <section id="pruebas">
+    <h2><span class="num">5</span>Pruebas</h2>
+
+    <p>Guardamos un saludo con <code>curl</code>:</p>
+    <pre><code class="language-bash">curl -k -X POST https://10.20.250.58:8443/saludar \
+  -H 'Content-Type: application/json' \
+  -d '{"nombre":"Juan"}'</code></pre>
+
+    <figure>
+      <img src="test-saludar.png" alt="Prueba POST /saludar">
+      <figcaption>Respuesta de <code>POST /saludar</code></figcaption>
+    </figure>
+
+    <p>Consultamos el historial:</p>
+    <pre><code class="language-bash">curl -k https://10.20.250.58:8443/historial</code></pre>
+
+    <figure>
+      <img src="test-historial.png" alt="Prueba GET /historial">
+      <figcaption>Respuesta de <code>GET /historial</code></figcaption>
+    </figure>
+
+    <p>Vemos que aparece el saludo guardado, lo que confirma que la persistencia funciona.</p>
+
+    <p>Por último, verificamos en la consola de AWS, en <em>Explore items</em> de nuestra tabla, que el registro se guardó correctamente:</p>
+
+    <figure>
+      <img src="dynamodb-items.png" alt="Registro en DynamoDB">
+      <figcaption>Registro persistido en la tabla <code>colorapp-saludos</code></figcaption>
+    </figure>
+
+    <div class="callout tip"><strong>Conclusión:</strong> queda demostrada la persistencia de extremo a extremo: la aplicación en Proxmox escribe en DynamoDB y podemos consultar los datos guardados.</div>
+  </section>
+
+  <section id="interfaz">
+    <h2><span class="num">6</span>Interfaz y panel de historial</h2>
+
+    <p>Para hacer visible la persistencia directamente en la aplicación, añadimos al frontend un <strong>panel lateral</strong> a la derecha que muestra el <em>Historial de Saludos</em> en vivo. El panel consume el endpoint <code>GET /historial</code> desde el mismo origen, por lo que no requiere ninguna configuración adicional de CORS.</p>
+
+    <p>En la vista añadimos el contenedor del panel, con su título, un botón de recarga y la lista de saludos:</p>
+    <span class="file-label">color.html</span>
+    <pre><code class="language-markup">&lt;aside id="historial-panel"&gt;
+    &lt;header&gt;
+        &lt;h2&gt;Historial de Saludos&lt;/h2&gt;
+        &lt;button id="refresh-historial" title="Recargar"&gt;&amp;#8635;&lt;/button&gt;
+    &lt;/header&gt;
+    &lt;ul id="historial-list"&gt;&lt;/ul&gt;
+&lt;/aside&gt;</code></pre>
+
+    <p>El panel es translúcido (usa <code>backdrop-filter</code>) para integrarse con el color de fondo aleatorio que genera la aplicación. Además, el <code>body</code> reserva el ancho del panel con <code>padding-right</code> para que el contenido principal quede centrado en el espacio restante:</p>
+    <span class="file-label">style.css</span>
+    <pre><code class="language-css">#historial-panel {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 320px;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(10px);
+    border-left: 1px solid rgba(255, 255, 255, 0.15);
+}</code></pre>
+
+    <p>En JavaScript cargamos el historial al abrir la página, después de cada saludo y con el botón de recarga. Cada registro se ordena del más reciente al más antiguo y se renderiza con su <em>swatch</em> de color, el nombre y la fecha:</p>
+    <span class="file-label">script.js</span>
+    <pre><code class="language-javascript">async function cargarHistorial() {
+    const response = await fetch('/historial');
+    const data = await response.json();
+    const saludos = Array.isArray(data) ? data : [];
+    saludos.sort((a, b) =&gt; (b.fecha || '').localeCompare(a.fecha || ''));
+    renderHistorial(saludos);
+}</code></pre>
+
+    <p>Así se ve la página final, con el color de fondo aleatorio y el panel del historial a la derecha:</p>
+    <figure>
+      <img src="interfaz.png" alt="Interfaz de ColorApp con el panel de historial">
+      <figcaption>Interfaz de ColorApp con el panel <em>Historial de Saludos</em></figcaption>
+    </figure>
+  </section>
+
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-markup.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-clike.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-java.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-properties.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-ini.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-css.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+<script>
+  const links = document.querySelectorAll('#toc a');
+  const sections = document.querySelectorAll('main section');
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        links.forEach(l => l.classList.remove('active'));
+        const id = entry.target.id;
+        const link = document.querySelector('#toc a[href="#' + id + '"]');
+        if (link) link.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-20% 0px -70% 0px' });
+  sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>
