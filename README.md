@@ -3,6 +3,8 @@
 > Proyecto I · Informática
 > **Autor:** Santiago Avila — 20201020065
 
+🔗 **Documentación:** [https://SantiagoAvila21.github.io/Proyecto-Informatica-I/](https://SantiagoAvila21.github.io/Proyecto-Informatica-I/)
+
 Aplicación web en **Spring Boot** que genera colores aleatorios y saluda al usuario, con **persistencia en AWS DynamoDB**: cada saludo queda guardado y se puede consultar el historial.
 
 ---
