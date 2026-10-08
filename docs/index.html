@@ -294,12 +294,12 @@
     <h2><span class="num">1</span>Tabla en DynamoDB</h2>
     <p>Entramos a nuestra consola de AWS, al apartado <em>Create Table</em> del servicio <strong>DynamoDB</strong>. Creamos nuestra tabla llamada <code>colorapp-saludos</code> con una <em>partition key</em> <code>id</code> de tipo <strong>string</strong>, ya que usaremos UUID para identificar cada uno de los registros.</p>
     <figure>
-      <img src="bda0b337-5225-4065-8797-3ad6c22f284d.png" alt="Crear tabla en DynamoDB">
+      <img src="201889d2-8ecb-43cb-bed9-11df53d6a2f0.png" alt="Crear tabla en DynamoDB">
       <figcaption>Creación de la tabla <code>colorapp-saludos</code></figcaption>
     </figure>
     <p>Creamos nuestra tabla y esperamos a que esté activa.</p>
     <figure>
-      <img src="image 1.png" alt="Tabla activa">
+      <img src="bda0b337-5225-4065-8797-3ad6c22f284d.png" alt="Tabla activa">
       <figcaption>Tabla creada y activa</figcaption>
     </figure>
   </section>
@@ -307,6 +307,10 @@
   <section id="usuario-iam">
     <h2><span class="num">2</span>Usuario IAM y credenciales</h2>
     <p>Iremos a <strong>IAM</strong> para crear nuestro usuario, el cual nos dará las <em>keys</em> para poder conectarnos a la base de datos. Al usuario lo llamaremos <code>colorApp</code>.</p>
+    <figure>
+      <img src="image 1.png" alt="Crear usuario IAM">
+      <figcaption>Creación del usuario <code>colorApp</code></figcaption>
+    </figure>
     <p>Le asignamos una política de acceso mínimo limitada a nuestra tabla:</p>
     <span class="file-label">policy.json</span>
     <pre><code class="language-json">{
