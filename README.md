@@ -5,6 +5,8 @@
 
 🔗 **Documentación:** [https://SantiagoAvila21.github.io/Proyecto-Informatica-I/](https://SantiagoAvila21.github.io/Proyecto-Informatica-I/)
 
+🌐 **App en vivo:** [https://10.20.250.58:8443/](https://10.20.250.58:8443/) — *requiere estar conectado a la VPN de la UD*
+
 Aplicación web en **Spring Boot** que genera colores aleatorios y saluda al usuario, con **persistencia en AWS DynamoDB**: cada saludo queda guardado y se puede consultar el historial.
 
 ---
